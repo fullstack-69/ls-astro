@@ -1,0 +1,17 @@
+---
+import { UAParser } from "ua-parser-js";
+
+const uaHeader = Astro.request.headers.get("user-agent") || "";
+const parser = new UAParser(uaHeader);
+const result = parser.getResult();
+const timeStr = new Date().toLocaleTimeString();
+---
+
+<article class="card">
+  <h1>
+    Hello, {result.browser.name}!
+  </h1>
+  <p>
+    Generated at: {timeStr}
+  </p>
+</article>
