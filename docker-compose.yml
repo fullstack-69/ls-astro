@@ -1,4 +1,4 @@
-project_name: astro
+name: astro
 services:
   cdn-edge:
     image: nginx:alpine
@@ -6,8 +6,7 @@ services:
     ports:
       - "8080:80"
     volumes:
+      - ./dist/client:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      # Optional: Create a local folder for shared images/assets to simulate CDN storage
-      # - ./shared-assets:/usr/share/nginx/html/assets:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
