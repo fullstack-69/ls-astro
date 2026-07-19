@@ -1,43 +1,50 @@
-# Astro Starter Kit: Minimal
+# Run the project
 
-```sh
-pnpm create astro@latest -- --template minimal
+pnpm run preview -- --host
+
+# Clear nginx cache
+
+`docker compose exec cdn-edge sh -c "rm -rf /var/cache/nginx/*"`
+
+# Nginx caching gotchas
+
+## `proxy_ignore_headers Cache-Control Expires;`
+
+Tells nginx to **stop honoring the origin's caching directives** so nginx applies its own `proxy_cache_valid` rule instead.
+
+### Why we need it
+
+Astro's SSR responses come back with:
+
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Cache-Control: public, max-age=0
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+`max-age=0` means "treat as stale immediately; revalidate before reuse." nginx's default behavior is to **refuse to store** any response with `max-age=0` (also `no-cache`, `no-store`, `private`, or a past `Expires`). Result: every request is a `MISS` and nothing ever caches.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+### What the directive does
 
-Any static assets, like images, can be placed in the `public/` directory.
+`proxy_ignore_headers Cache-Control Expires;` makes nginx **ignore** those two headers from the upstream. With the origin's veto removed, our own directive takes over:
 
-## 🧞 Commands
+```nginx
+proxy_cache_valid 200 10m;   # cache 200 responses for 10 minutes
+```
 
-All commands are run from the root of the project, from a terminal:
+So the response gets stored for 10 minutes regardless of what the origin said.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+### The tradeoff
 
-## 👀 Want to learn more?
+This is the **edge overriding the origin**. Astro said "revalidate every time"; nginx (our mock CDN) decides "I'll serve this for 10 minutes." That's a real lever CDNs expose — and a real responsibility: we may now serve content **staler than the origin intended**. Fine for this static `Greeting` demo; on a page with live/personalized data it would ship a bug.
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+### Related gotcha
+
+If the origin also sends `Set-Cookie` (e.g. Astro sessions), nginx won't cache either. Adding `Set-Cookie` to the ignore list forces caching, but the stored copy keeps that header — so **every visitor gets one user's cookie** on a `HIT`. If you ignore `Set-Cookie`, also hide it:
+
+```nginx
+proxy_ignore_headers Set-Cookie Cache-Control Expires;
+proxy_hide_header Set-Cookie;
+```
+
+> **Rule of thumb:** ignoring cache headers is safe only when you also strip whatever made the response personalized — and only when the page doesn't actually depend on it.

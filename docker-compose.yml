@@ -1,12 +1,23 @@
 name: astro
 services:
+  delay-proxy:
+    image: node:24-alpine
+    container_name: delay-proxy
+    working_dir: /app
+    volumes:
+      - ./delay-proxy.js:/app/delay-proxy.js:ro
+    command: node delay-proxy.js
+    environment:
+      - DELAY_MS=2000
+      - TARGET=http://host.docker.internal:4321
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   cdn-edge:
-    image: nginx:alpine
+    image: nginx:1.31-alpine
     container_name: cdn-edge
     ports:
       - "8080:80"
     volumes:
       - ./dist/client:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
