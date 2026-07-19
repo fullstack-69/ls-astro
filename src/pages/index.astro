@@ -2,7 +2,7 @@
 import Layout from "@components/Layout.astro";
 import Nav from "@components/Nav.astro";
 import Greeting from "@components/Greeting.astro";
-import Todo from "@components/Todo.astro";
+import TodoReact from "@components/Todo.tsx";
 ---
 
 <Layout>
@@ -12,5 +12,5 @@ import Todo from "@components/Todo.astro";
       <p>Status: <span aria-busy="true">Waiting...</span></p>
     </div>
   </Greeting>
-  <Todo />
+  <TodoReact client:load />
 </Layout>
