@@ -2,6 +2,17 @@
 
 pnpm run preview -- --host
 
+## Database
+
+The todo data layer uses libSQL/Turso through `src/db/client.ts`.
+
+Set these environment variables to point the app at a Turso database:
+
+- `TURSO_DATABASE_URL`
+- `TURSO_AUTH_TOKEN`
+
+If those are not set, the app falls back to a local `app.db` file for development.
+
 # Clear nginx cache
 
 `docker compose exec cdn-edge sh -c "rm -rf /var/cache/nginx/*"`
