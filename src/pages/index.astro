@@ -8,9 +8,10 @@ import TodoReact from "@components/Todo.tsx";
 <Layout>
   <Nav />
   <Greeting server:defer>
-    <div slot="fallback">
-      <p>Status: <span aria-busy="true">Waiting...</span></p>
-    </div>
+    <article slot="fallback">
+      <h1>Greeting</h1>
+      <p><span aria-busy="true"></span></p>
+    </article>
   </Greeting>
   <TodoReact client:load />
 </Layout>
