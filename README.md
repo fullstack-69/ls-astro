@@ -1,11 +1,5 @@
 # Setup
 
-## Run the Project
-
-```bash
-pnpm run preview -- --host
-```
-
 ## Database
 
 The todo data layer uses libSQL/Turso through `src/db/client.ts`.
