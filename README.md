@@ -34,6 +34,49 @@ If you ever need to clear cache manually, use:
 pnpm run cdn:reset
 ```
 
+# Project Summary
+
+## 1) Added files
+
+**Infrastructure**
+
+- `docker-compose.yml` — spins up two containers: `delay-proxy` (Node) and `cdn-edge` (nginx on port 8080)
+- `nginx.conf` — the mock CDN: caches SSR responses 10m, serves `/_astro/` hashed assets with `immutable`, bypasses cache for `/_server-islands/`
+- `delay-proxy.js` — Node proxy on 4322 that sleeps `DELAY_MS` before forwarding to Astro, simulating a slow origin
+- `.env` — `DB_LATENCY` (fake DB delay) and `TURSO_DATABASE_URL`
+
+**Data layer**
+
+- `src/db/client.ts` — libSQL client, falls back to `file:app.db`
+- `src/db/schema.ts` — lazily creates the `todos` table, memoized via a module-level promise
+- `src/db/index.ts` — CRUD (`getTodos`, `createTodos`, `deleteTodo`, `searchTodo`, `updateTodo`), each with an artificial `sleep(DB_LATENCY)`
+- `src/db/seeder.ts` — wipes and inserts 20 sample todos
+- `src/types/todo.ts` — shared `Todo` type, deliberately neutral so the client never imports DB code
+
+**UI**
+
+- `src/components/Layout.astro` — html shell + Pico CSS
+- `src/components/Nav.astro` — nav bar with a render timestamp
+- `src/components/Greeting.astro` — parses `user-agent`, prints a timestamp; used with `server:defer` as a server island
+- `src/components/Todo.tsx` — React island (`client:load`) that fetches and deletes todos
+- `src/actions/index.ts` — Astro actions (`getTodos`, `deleteTodo`) as the client↔server boundary
+- `src/middleware.ts` — currently a pass-through; the old artificial delay is commented out
+
+**Modified**
+
+- `astro.config.mjs` — node standalone adapter, React integration, `allowedHosts: ["localhost:8080"]`, `checkOrigin: true`
+- `package.json` — React, libSQL, Pico, ua-parser deps; `db:reset` and `cdn:reset` scripts; build now resets CDN cache
+- `tsconfig.json` — `@/*`, `@components/*` etc. path aliases + react-jsx
+- `README.md` — replaced boilerplate with three writeups (nginx cache header gotchas, the `node:fs/promises` hydration failure, and the `checkOrigin`/`Host` header fix)
+- `.gitignore` — `.env` now tracked, `app.db` ignored
+- Deleted `AGENTS.md` and the `CLAUDE.md` symlink
+
+## 2) What it's demonstrating
+
+The three timestamps (nav, greeting, todos) are the point — they let you _see_ what's cached and what isn't. Nav is baked into the cached SSR HTML, `Greeting` is a deferred server island that bypasses the cache, and `Todo` fetches fresh via actions. The delay proxy and `DB_LATENCY` exaggerate the gaps so the fallback states are visible.
+
+The README notes read as debugging postmortems: nginx refusing to cache `max-age=0`, a server-only module leaking into the client bundle, and `$host` stripping the port and breaking CSRF checks.
+
 # Note 1: Nginx Caching Gotchas
 
 ## Directive: `proxy_ignore_headers Cache-Control Expires;`
