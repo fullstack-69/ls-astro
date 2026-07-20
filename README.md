@@ -1,20 +1,37 @@
 # Setup
 
-## Database
+## Environment
 
-The todo data layer uses libSQL/Turso through `src/db/client.ts`.
+Create a `.env` file in the project root.
 
-Set these environment variables to point the app at a Turso database:
+Current keys:
 
-- `TURSO_DATABASE_URL`
-- `TURSO_AUTH_TOKEN`
+```env
+DB_LATENCY=1000
+TURSO_DATABASE_URL=file:app.db
+```
 
-If those are not set, the app falls back to a local `app.db` file for development.
+- `DB_LATENCY`: artificial DB delay in milliseconds for demo/testing behavior.
+- `TURSO_DATABASE_URL`: database URL used by `src/db/client.ts`.
+  - Use `file:app.db` for local development.
+  - Use your Turso URL in remote environments.
+
+If `TURSO_DATABASE_URL` is missing, the app falls back to `file:app.db`.
 
 ## Clear Nginx Cache
 
+Manual cache clearing is no longer required in normal flow.
+
+The build script already resets CDN cache automatically:
+
 ```bash
-docker compose exec cdn-edge sh -c "rm -rf /var/cache/nginx/*"
+pnpm build
+```
+
+If you ever need to clear cache manually, use:
+
+```bash
+pnpm run cdn:reset
 ```
 
 # Note 1: Nginx Caching Gotchas
