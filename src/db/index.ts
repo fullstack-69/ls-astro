@@ -41,18 +41,6 @@ export async function deleteTodo(id: number) {
   });
 }
 
-export async function searchTodo(id: number) {
-  await ensureTodosTable();
-
-  const result = await client.execute({
-    sql: "SELECT id, todoText FROM todos WHERE id = ? LIMIT 1",
-    args: [id],
-  });
-
-  const row = result.rows[0];
-  return row ? toTodo(row as Record<string, unknown>) : undefined;
-}
-
 export async function updateTodo(id: number, todoTextUpdated: string) {
   if (!todoTextUpdated.trim()) {
     throw new Error("Empty Text");
