@@ -10,8 +10,11 @@ export default defineConfig({
   adapter: node({
     mode: "standalone",
   }),
+  server: {
+    allowedHosts: ["localhost:8080"],
+  },
   security: {
-    checkOrigin: false,
+    checkOrigin: true,
   },
   integrations: [react()],
 });

@@ -8,13 +8,23 @@ const TARGET = new URL(
 http
   .createServer((req, res) => {
     setTimeout(() => {
+      const headers = {
+        ...req.headers,
+        // host: TARGET.host // if you override the host header, Astro will reject the request because of checkOrigin: true
+      };
+      // Log exactly what you're about to send upstream
+      console.log("=== outgoing request to Astro ===");
+      console.log(`${req.method} ${req.url}`);
+      console.log(headers);
+      console.log("==================================");
+
       const upstream = http.request(
         {
           hostname: TARGET.hostname,
           port: TARGET.port || 80,
           path: req.url,
           method: req.method,
-          headers: { ...req.headers, host: TARGET.host },
+          headers: headers,
         },
         (up) => {
           res.writeHead(up.statusCode, up.headers);
